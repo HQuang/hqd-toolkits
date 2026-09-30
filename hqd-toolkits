@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HQD_HOME="${HQD_HOME:-$HOME/.hqd}"
+PACKAGE_HOME="${HQD_PACKAGE_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+USER_COMMANDS_DIR="$HQD_HOME/commands"
+USER_SCRIPTS_DIR="$HQD_HOME/scripts"
+PACKAGE_COMMANDS_DIR="$PACKAGE_HOME/commands"
+PACKAGE_SCRIPTS_DIR="$PACKAGE_HOME/scripts"
+
+# Backward-compatible variables for user-defined commands.
+COMMANDS_DIR="$USER_COMMANDS_DIR"
+SCRIPTS_DIR="$USER_SCRIPTS_DIR"
+
+command_file_for() {
+  local name="$1"
+  if [[ -f "$USER_COMMANDS_DIR/$name.sh" ]]; then
+    printf '%s\n' "$USER_COMMANDS_DIR/$name.sh"
+    return 0
+  fi
+  if [[ -f "$PACKAGE_COMMANDS_DIR/$name.sh" ]]; then
+    printf '%s\n' "$PACKAGE_COMMANDS_DIR/$name.sh"
+    return 0
+  fi
+  return 1
+}
+
+show_help() {
+  cat <<'EOF'
+hqd-toolkits - HQ Dev CLI toolkit
+
+Usage:
+  hqd-toolkits <command> [args...]
+  hqd-toolkits --help | -h
+  hqd-toolkits --version | -V
+
+Commands:
+EOF
+
+  local names=""
+  local dir file name
+  for dir in "$PACKAGE_COMMANDS_DIR" "$USER_COMMANDS_DIR"; do
+    [[ -d "$dir" ]] || continue
+    for file in "$dir"/*.sh; do
+      [[ -e "$file" ]] || continue
+      name="$(basename "$file" .sh)"
+      if ! grep -qxF "$name" <<<"$names"; then
+        names+="${name}"$'\n'
+      fi
+    done
+  done
+
+  if [[ -z "$names" ]]; then
+    echo "  (chưa có command nào)"
+  else
+    while IFS= read -r name; do
+      [[ -n "$name" ]] || continue
+      file="$(command_file_for "$name")"
+      desc="$(bash -c "source \"$file\"; printf '%s' \"\${DESCRIPTION:-}\"" 2>/dev/null || true)"
+      printf "  %-12s %s\n" "$name" "$desc"
+    done < <(printf '%s' "$names" | sort -u)
+  fi
+
+  echo
+  echo "User extensions: $HQD_HOME"
+  echo "Chạy 'hqd-toolkits <command> --help' để xem chi tiết từng lệnh."
+}
+
+main() {
+  if [[ $# -eq 0 || "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    show_help
+    exit 0
+  fi
+
+  if [[ "${1:-}" == "--version" || "${1:-}" == "-V" ]]; then
+    echo "hqd-toolkits ${HQD_PACKAGE_VERSION:-dev}"
+    exit 0
+  fi
+
+  local cmd="$1"; shift
+  local cmd_file
+  if ! cmd_file="$(command_file_for "$cmd")"; then
+    echo "hqd-toolkits: không tìm thấy command '$cmd'" >&2
+    echo "Chạy 'hqd-toolkits --help' để xem danh sách lệnh." >&2
+    exit 1
+  fi
+
+  # shellcheck source=/dev/null
+  source "$cmd_file"
+  run "$@"
+}
+
+main "$@"

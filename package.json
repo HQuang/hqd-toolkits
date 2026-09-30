@@ -1,0 +1,50 @@
+{
+  "name": "hqd-toolkits",
+  "version": "0.1.0",
+  "description": "HQ Dev CLI toolkit with Codex + AgentKit + MCP Memory + Obsidian knowledge workflow",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "hqd-toolkits": "bin/hqd-toolkits.js"
+  },
+  "files": [
+    "bin/",
+    "hqd-toolkits",
+    "commands/",
+    "scripts/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node ./scripts/install-extensions.js",
+    "test": "node --test test/*.test.js && node ./test/package-smoke.js",
+    "prepack": "npm test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "keywords": [
+    "cli",
+    "codex",
+    "agentkit",
+    "mcp",
+    "memory",
+    "obsidian",
+    "developer-tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HQuang/hqd-toolkits.git"
+  },
+  "homepage": "https://github.com/HQuang/hqd-toolkits#readme",
+  "bugs": {
+    "url": "https://github.com/HQuang/hqd-toolkits/issues"
+  }
+}
