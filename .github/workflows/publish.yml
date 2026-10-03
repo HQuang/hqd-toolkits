@@ -1,0 +1,71 @@
+name: Stage npm package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Version tags must be protected in GitHub repository settings. Configure the
+# npm trusted publisher for this exact workflow and the npm-publish environment.
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-stage-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Check release tag and npm version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node -e '
+            const expected = `v${require("./package.json").version}`;
+            if (process.env.RELEASE_TAG !== expected) {
+              console.error(`Tag ${process.env.RELEASE_TAG} does not match ${expected}`);
+              process.exit(1);
+            }
+          '
+          node -e '
+            const version = process.argv[1];
+            const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+            if (!match) {
+              console.error(`Could not parse npm version ${version}`);
+              process.exit(1);
+            }
+            const [, major, minor] = match.map(Number);
+            if (major < 11 || (major === 11 && minor < 15)) {
+              console.error(`npm ${version} is too old; npm 11.15.0 or later is required`);
+              process.exit(1);
+            }
+          ' "$(npm --version)"
+
+      - name: Run tests
+        run: npm test
+
+      - name: Generate packlist JSON
+        run: npm pack --dry-run --ignore-scripts --json > "$RUNNER_TEMP/pack.json"
+
+      - name: Verify packlist
+        run: node .github/scripts/verify-packlist.js "$RUNNER_TEMP/pack.json"
+
+      - name: Stage package with npm Trusted Publishing
+        run: npm stage publish

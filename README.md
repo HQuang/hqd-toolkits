@@ -7,7 +7,7 @@
 
 ## Requirements
 
-- Node.js 18 or newer, with npm and `npx`.
+- Node.js 22 or newer, with npm and `npx`.
 - Bash 4 or newer; `hqd-toolkits stripe` uses this when listing available scripts.
 - Linux or macOS.
 - For the AI workflow, install the Codex CLI and AgentKit (`ak`) by following the [Codex CLI documentation](https://developers.openai.com/codex/cli/) and [AgentKit installation documentation](https://docs.agentkit.best/en/stable/getting-started/installation).
@@ -16,31 +16,23 @@
 
 ## Install
 
-Install globally from a local checkout. npm installs the package under its global prefix (usually `<prefix>/lib/node_modules/hqd-toolkits`) and puts the `hqd-toolkits` executable in `<prefix>/bin/`:
-
-```bash
-npm install -g .
-hqd-toolkits --help
-```
-
-For a version published to npm, install it with:
+Install the published package globally:
 
 ```bash
 npm install -g hqd-toolkits
+hqd-toolkits --help
 ```
 
 ### What installation changes
 
-`npm install -g .` installs this checkout globally. `npm install hqd-toolkits` without `-g` instead installs the package into `./node_modules/hqd-toolkits` in the current project and adds its executable under `./node_modules/.bin/`. In a project with a `package.json`, npm may also update its dependency metadata and lockfile. Use `npm install -g hqd-toolkits` when you want the command available globally.
+`npm install -g hqd-toolkits` installs the package under npm's global prefix and exposes the `hqd-toolkits` command in `<prefix>/bin/`. When npm allows lifecycle scripts, the package's `postinstall` hook also copies the bundled extensions into `~/.hqd/` by default, or into the directory set by `HQD_HOME`:
 
-Both forms run the package's `postinstall` hook when npm permits lifecycle scripts. The hook copies these bundled files:
+- `commands/knowledge.sh` and `commands/stripe.sh` to `~/.hqd/commands/` (or `$HQD_HOME/commands/`).
+- The knowledge manager and Stripe scripts to their matching paths under `~/.hqd/scripts/` (or `$HQD_HOME/scripts/`).
 
-- `commands/knowledge.sh` and `commands/stripe.sh` to `~/.hqd/commands/`.
-- `scripts/knowledge/knowledge-manager.sh`, `scripts/knowledge/knowledge-manager.js`, and the Stripe scripts to the matching paths under `~/.hqd/scripts/`.
+This extension directory is separate from the npm package location. If npm is configured to ignore or block install scripts, the package and command are installed but the extension copies are not created or upgraded.
 
-Set `HQD_HOME` to use a different extension directory. This is separate from the npm package location: even a local `npm install hqd-toolkits` writes extensions to the user's `HQD_HOME`. If npm is configured to ignore or block install scripts, the package is installed but these extension copies are not created or upgraded.
-
-The hook records hashes and ownership in `~/.hqd/state/extensions/receipt.json` (or `$HQD_HOME/state/extensions/receipt.json`). On a later package install, it upgrades unchanged copies it owns and recognized copies from a known earlier release. It preserves modified, custom, and unknown same-name files and warns that they continue to take precedence over the bundled copy. The npm package's own files live under npm's install directory; removing the npm package does not remove the copies under `~/.hqd`.
+The hook records hashes and ownership in `~/.hqd/state/extensions/receipt.json` (or `$HQD_HOME/state/extensions/receipt.json`). On a later package install, it upgrades unchanged copies it owns and recognized copies from a known earlier release. It preserves modified, custom, and unknown same-name files and warns that they continue to take precedence over the bundled copy. The npm package's own files live under npm's install directory; removing the npm package does not remove the extension copies.
 
 Installing the npm package does not install a project's knowledge workflow or create notes. Run `hqd-toolkits knowledge install` from the target project to do that. It adds managed content to `AGENTS.md` and `.codex/config.toml`, creates the `knowledge-sync` files under `.agents/skills/`, and records its project state under `.hqd-knowledge/`. It creates the configured Memory JSONL file only if it does not already exist, and creates `Projects/<project-slug>/Knowledge/` under the configured vault. Existing Memory file contents are left as-is.
 

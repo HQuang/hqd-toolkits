@@ -8,10 +8,15 @@
     "hqd-toolkits": "bin/hqd-toolkits.js"
   },
   "files": [
-    "bin/",
+    "bin/hqd-toolkits.js",
     "hqd-toolkits",
-    "commands/",
-    "scripts/",
+    "commands/knowledge.sh",
+    "commands/stripe.sh",
+    "scripts/install-extensions.js",
+    "scripts/knowledge/knowledge-manager.js",
+    "scripts/knowledge/knowledge-manager.sh",
+    "scripts/stripe/check_multi_customers.sh",
+    "scripts/stripe/example.sh",
     "README.md",
     "LICENSE"
   ],
@@ -21,7 +26,7 @@
     "prepack": "npm test"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "os": [
     "darwin",
